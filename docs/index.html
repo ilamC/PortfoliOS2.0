@@ -7,6 +7,69 @@
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <link rel="manifest" href="manifest.webmanifest">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
+    <style>
+      /* Phone-only screens: rotate gate (upright) and retro loader (sideways). PC never sees these. */
+      #pf-gate, #pf-loader {
+        position: fixed; inset: 0; box-sizing: border-box;
+        background: #120E1A; color: #F2ECFA;
+        font-family: 'VT323', monospace; text-align: center;
+        display: flex; flex-direction: column; align-items: center;
+      }
+      #pf-gate[hidden], #pf-loader[hidden] { display: none; }
+      #pf-gate {
+        z-index: 20; justify-content: space-between; gap: 20px; overflow-y: auto;
+        padding: calc(env(safe-area-inset-top) + clamp(24px, 6vh, 72px)) 24px calc(env(safe-area-inset-bottom) + 28px);
+      }
+      .pf-logo { font-family: 'Press Start 2P', monospace; font-size: 20px; color: #7FF5FF; }
+      .pf-sub { font-size: 24px; color: #CFC4E2; margin-top: 10px; }
+      .pf-mid { display: flex; flex-direction: column; align-items: center; gap: clamp(16px, 3.5vh, 28px); }
+      .pf-ring {
+        width: clamp(110px, 25vh, 230px); height: clamp(110px, 25vh, 230px); border-radius: 50%;
+        background: #1E1729; border: 2px solid #3A2C4F;
+        display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+      }
+      .pf-ring svg { width: 70%; height: 70%; }
+      .pf-turn { transform-origin: 75px 75px; animation: pf-turn 2.4s ease-in-out infinite; }
+      @keyframes pf-turn { 0%, 20% { transform: rotate(-90deg); } 55%, 100% { transform: rotate(0deg); } }
+      @media (prefers-reduced-motion: reduce) { .pf-turn { animation: none; } }
+      .pf-title { font-family: 'Press Start 2P', monospace; font-size: 17px; line-height: 30px; color: #FFFFFF; margin: 0; font-weight: normal; }
+      .pf-body { font-size: 26px; line-height: 28px; color: #E2DAEE; max-width: 300px; margin: 0; }
+      .pf-status {
+        display: flex; align-items: center; gap: 12px; padding: 10px 18px; min-height: 44px; box-sizing: border-box;
+        border: 2px solid #4A3A62; background: #1A1424; font-size: 24px;
+      }
+      .pf-dot { width: 12px; height: 12px; background: #FF6FCF; animation: pf-blink 1s steps(1) infinite; }
+      @keyframes pf-blink { 50% { opacity: 0.25; } }
+      .pf-foot { display: flex; flex-direction: column; align-items: center; gap: 6px; }
+      .pf-hint { font-size: 22px; line-height: 24px; color: #CFC4E2; max-width: 320px; margin: 0; }
+      .pf-foot a { color: #7FF5FF; font-size: 24px; min-height: 44px; display: flex; align-items: center; }
+      @media (max-width: 340px) { .pf-title { font-size: 14px; line-height: 26px; } .pf-logo { font-size: 17px; } }
+      @media (max-height: 700px) {
+        #pf-gate { gap: 12px; padding-top: calc(env(safe-area-inset-top) + 18px); padding-bottom: calc(env(safe-area-inset-bottom) + 14px); }
+        .pf-sub { font-size: 22px; margin-top: 4px; }
+        .pf-mid { gap: 14px; }
+        .pf-ring { width: clamp(84px, 18vh, 140px); height: clamp(84px, 18vh, 140px); }
+        .pf-body { font-size: 24px; line-height: 25px; }
+        .pf-title { line-height: 26px; }
+        .pf-foot { gap: 0; }
+      }
+      #pf-loader {
+        z-index: 10; justify-content: center; gap: clamp(18px, 6vh, 30px);
+        padding: 20px max(56px, env(safe-area-inset-right)) 20px max(56px, env(safe-area-inset-left));
+      }
+      .pf-brand { display: flex; align-items: center; gap: 16px; }
+      .pf-brand .pf-logo { font-size: 22px; }
+      .pf-barwrap { width: min(440px, 100%); display: flex; flex-direction: column; gap: 10px; }
+      .pf-bar { height: 22px; box-sizing: border-box; border: 2px solid #4A3A62; background: #1A1424; padding: 3px; display: flex; gap: 3px; }
+      .pf-bar i { flex: 1 1 0; }
+      .pf-bar i.on { background: #7FF5FF; }
+      .pf-barlabel { display: flex; justify-content: space-between; font-size: 24px; }
+      .pf-barlabel span:last-child { color: #7FF5FF; }
+      .pf-tip { font-size: 24px; line-height: 26px; color: #E2DAEE; max-width: 560px; margin: 0; }
+    </style>
   </head>
   <body>
     <div id="unity-container">
@@ -19,12 +82,55 @@
       </div>
       <div id="unity-warning"> </div>
     </div>
+    <div id="pf-gate" hidden>
+      <div>
+        <div class="pf-logo">portfoliOS</div>
+        <div class="pf-sub">interactive game portfolio</div>
+      </div>
+      <div class="pf-mid">
+        <div class="pf-ring">
+          <svg viewBox="0 0 150 150" fill="none" aria-hidden="true">
+            <rect x="58" y="30" width="34" height="62" rx="4" stroke="#8A7AA6" stroke-width="3" stroke-dasharray="5 5"></rect>
+            <g class="pf-turn">
+              <rect x="36" y="54" width="78" height="42" rx="5" stroke="#7FF5FF" stroke-width="4"></rect>
+              <rect x="44" y="61" width="62" height="28" fill="#7FF5FF" fill-opacity="0.18"></rect>
+            </g>
+            <path d="M104 26 C120 32 126 42 124 52" stroke="#FF6FCF" stroke-width="4" stroke-linecap="round"></path>
+            <path d="M116 48 L124 54 L130 45" stroke="#FF6FCF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"></path>
+          </svg>
+        </div>
+        <h1 class="pf-title">Turn your phone<br>sideways</h1>
+        <p class="pf-body">This portfolio is a whole desktop. It needs the wide view to boot.</p>
+        <div class="pf-status" role="status"><div class="pf-dot"></div><span id="pf-status-text">Waiting for sideways…</span></div>
+      </div>
+      <div class="pf-foot">
+        <p class="pf-hint">Rotation lock on? Swipe down and turn it off.</p>
+        <a href="https://play.google.com/store/apps/details?id=com.ByIlan.GoatsVsTigers" target="_blank" rel="noopener">Goats Vs Tigers on Google Play</a>
+      </div>
+    </div>
+    <div id="pf-loader" hidden>
+      <div class="pf-brand">
+        <svg width="44" height="40" viewBox="0 0 44 40" fill="none" aria-hidden="true">
+          <rect x="2" y="2" width="40" height="28" rx="3" stroke="#7FF5FF" stroke-width="3"></rect>
+          <rect x="8" y="8" width="28" height="16" fill="#7FF5FF" fill-opacity="0.2"></rect>
+          <path d="M14 37 H30" stroke="#8A7AA6" stroke-width="3" stroke-linecap="round"></path>
+          <rect x="35" y="25" width="4" height="3" fill="#FF6FCF"></rect>
+        </svg>
+        <div class="pf-logo">portfoliOS</div>
+      </div>
+      <div class="pf-barwrap">
+        <div class="pf-bar" id="pf-bar"></div>
+        <div class="pf-barlabel"><span>Loading desktop…</span><span id="pf-pct">0%</span></div>
+      </div>
+      <p class="pf-tip">Tip: press the power button on the monitor to boot it up.</p>
+    </div>
     <script>
-      window.addEventListener("load", function () {
+      // The service worker pre-downloads the whole build, so it is registered only once Unity starts.
+      function registerServiceWorker() {
         if ("serviceWorker" in navigator) {
           navigator.serviceWorker.register("ServiceWorker.js");
         }
-      });
+      }
 
       var container = document.querySelector("#unity-container");
       var canvas = document.querySelector("#unity-canvas");
@@ -87,25 +193,63 @@
         // Mobile device style: fill the whole browser client area with the game canvas:
         var meta = document.createElement('meta');
         meta.name = 'viewport';
-        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes';
+        meta.content = 'width=device-width, height=device-height, initial-scale=1.0, user-scalable=no, shrink-to-fit=yes, viewport-fit=cover';
         document.getElementsByTagName('head')[0].appendChild(meta);
       }
 
 
-      loadingBar.style.display = "block";
+      // Phones: hold Unity back while the phone is upright and show the rotate gate instead.
+      var isPhone = /iPhone|iPod|Android.+Mobile/i.test(navigator.userAgent) ||
+        (window.matchMedia("(pointer: coarse)").matches && Math.min(screen.width, screen.height) < 600);
+      var portrait = window.matchMedia("(orientation: portrait)");
+      var gate = document.querySelector("#pf-gate");
+      var gateStatus = document.querySelector("#pf-status-text");
+      var phoneLoader = document.querySelector("#pf-loader");
+      var phoneBar = document.querySelector("#pf-bar");
+      var phonePct = document.querySelector("#pf-pct");
+      var started = false;
 
-      var script = document.createElement("script");
-      script.src = loaderUrl;
-      script.onload = () => {
-        createUnityInstance(canvas, config, (progress) => {
-          progressBarFull.style.width = 100 * progress + "%";
-        }).then((unityInstance) => {
-          loadingBar.style.display = "none";
-        }).catch((message) => {
-          alert(message);
-        });
-      };
-      document.body.appendChild(script);
+      for (var i = 0; i < 12; i++) phoneBar.appendChild(document.createElement("i"));
+
+      function setPhoneProgress(progress) {
+        var on = Math.round(progress * 12);
+        for (var i = 0; i < 12; i++) phoneBar.children[i].className = i < on ? "on" : "";
+        phonePct.textContent = Math.round(progress * 100) + "%";
+      }
+
+      function updateGate() {
+        var blocked = isPhone && portrait.matches;
+        gate.hidden = !blocked;
+        if (!blocked && !started) startUnity();
+      }
+
+      function startUnity() {
+        started = true;
+        gateStatus.textContent = "Paused. Turn sideways to continue";
+        registerServiceWorker();
+        if (isPhone) phoneLoader.hidden = false;
+        else loadingBar.style.display = "block";
+
+        var script = document.createElement("script");
+        script.src = loaderUrl;
+        script.onload = () => {
+          createUnityInstance(canvas, config, (progress) => {
+            progressBarFull.style.width = 100 * progress + "%";
+            if (isPhone) setPhoneProgress(progress);
+          }).then((unityInstance) => {
+            loadingBar.style.display = "none";
+            phoneLoader.hidden = true;
+          }).catch((message) => {
+            alert(message);
+          });
+        };
+        document.body.appendChild(script);
+      }
+
+      if (portrait.addEventListener) portrait.addEventListener("change", updateGate);
+      else portrait.addListener(updateGate);
+      window.addEventListener("resize", updateGate);
+      updateGate();
     </script>
   </body>
 </html>
