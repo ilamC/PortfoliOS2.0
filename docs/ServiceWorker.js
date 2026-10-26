@@ -20,33 +20,30 @@ self.addEventListener('install', function (e) {
 });
 
 self.addEventListener('activate', function (e) {
-    e.waitUntil(self.clients.claim());
+    // Drop caches left by older builds.
+    e.waitUntil((async function () {
+      const names = await caches.keys();
+      await Promise.all(names.filter(function (n) { return n !== cacheName; }).map(function (n) { return caches.delete(n); }));
+      await self.clients.claim();
+    })());
 });
 
+// Network first: a new build uploaded under the same file names reaches people who visited
+// before (the browser's HTTP cache keeps repeat visits cheap). The cache is only an offline fallback.
 self.addEventListener('fetch', function (e) {
+    if (e.request.method !== 'GET') { return; }
     e.respondWith((async function () {
-      // Pages go network-first so an updated index.html reaches people who visited before.
-      if (e.request.mode === 'navigate') {
-        try {
-          const fresh = await fetch(e.request);
+      try {
+        const response = await fetch(e.request);
+        if (response.ok) {
           const cache = await caches.open(cacheName);
-          cache.put(e.request, fresh.clone());
-          return fresh;
-        } catch (err) {
-          const cached = await caches.match(e.request);
-          if (cached) { return cached; }
-          throw err;
+          cache.put(e.request, response.clone());
         }
+        return response;
+      } catch (err) {
+        const cached = await caches.match(e.request);
+        if (cached) { return cached; }
+        throw err;
       }
-
-      let response = await caches.match(e.request);
-      console.log(`[Service Worker] Fetching resource: ${e.request.url}`);
-      if (response) { return response; }
-
-      response = await fetch(e.request);
-      const cache = await caches.open(cacheName);
-      console.log(`[Service Worker] Caching new resource: ${e.request.url}`);
-      cache.put(e.request, response.clone());
-      return response;
     })());
 });
