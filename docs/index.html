@@ -306,7 +306,7 @@
 
       // Phones: the browser's address and tab bars take a big bite out of a sideways screen,
       // so the first tap goes full screen and locks landscape (Android and most phone browsers).
-      // iPhone Safari can't put a page in full screen, so it gets an "Add to Home Screen" tip.
+      // iPhone Safari can't put a page in full screen; it just keeps the browser bars.
       var root = document.documentElement;
       var canFullscreen = !!(root.requestFullscreen || root.webkitRequestFullscreen) &&
         document.fullscreenEnabled !== false && document.webkitFullscreenEnabled !== false;
@@ -331,12 +331,10 @@
       if (isPhone && !isStandalone) {
         if (canFullscreen) {
           fsTip.textContent = "Tap anywhere to go full screen.";
+          fsTip.hidden = false;
           document.addEventListener("touchend", goFullscreen, true);
           document.addEventListener("click", goFullscreen, true);
-        } else if (/iPhone|iPod/i.test(navigator.userAgent)) {
-          fsTip.textContent = "For full screen: Share \u203A Add to Home Screen.";
         }
-        fsTip.hidden = !fsTip.textContent;
       }
 
       if (portrait.addEventListener) portrait.addEventListener("change", updateGate);
