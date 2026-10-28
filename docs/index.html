@@ -7,6 +7,9 @@
     <link rel="shortcut icon" href="TemplateData/favicon.ico">
     <link rel="stylesheet" href="TemplateData/style.css">
     <link rel="manifest" href="manifest.webmanifest">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap">
@@ -87,6 +90,10 @@
       .pf-tip span { color: #FF6FCF; }
       @media (max-height: 460px) { .pf-log { min-height: 3.45em; } .pf-log li:nth-last-child(n+4) { display: none; } .pf-ver { font-size: 20px; margin-top: 2px; } }
       @media (prefers-reduced-motion: reduce) { #pf-loader { transition: none; } .pf-cursor { animation: none; } }
+      /* Size to the part of the screen the browser's bars leave visible. */
+      @supports (height: 100dvh) { #unity-container { height: 100dvh; } }
+      .pf-fs { position: relative; font-size: clamp(22px, 1.3vw, 28px); line-height: 24px; color: #7FF5FF; margin: 0; }
+      .pf-fs[hidden] { display: none; }
     </style>
   </head>
   <body>
@@ -147,6 +154,7 @@
         </div>
       </div>
       <p class="pf-tip">Tip: press the <span>power button</span> on the monitor to boot it up.</p>
+      <p class="pf-fs" id="pf-fs" hidden></p>
     </div>
     <script>
       // The service worker pre-downloads the whole build, so it is registered only once Unity starts.
@@ -296,6 +304,41 @@
           });
         };
         document.body.appendChild(script);
+      }
+
+      // Phones: the browser's address and tab bars take a big bite out of a sideways screen,
+      // so the first tap goes full screen and locks landscape (Android and most phone browsers).
+      // iPhone Safari can't put a page in full screen, so it gets an "Add to Home Screen" tip.
+      var root = document.documentElement;
+      var canFullscreen = !!(root.requestFullscreen || root.webkitRequestFullscreen) &&
+        document.fullscreenEnabled !== false && document.webkitFullscreenEnabled !== false;
+      var isStandalone = window.navigator.standalone ||
+        window.matchMedia("(display-mode: fullscreen), (display-mode: standalone)").matches;
+      var fsTip = document.querySelector("#pf-fs");
+
+      function isFullscreen() {
+        return !!(document.fullscreenElement || document.webkitFullscreenElement);
+      }
+
+      function goFullscreen() {
+        if (!isPhone || !canFullscreen || isStandalone || portrait.matches || isFullscreen()) return;
+        var request = root.requestFullscreen ? root.requestFullscreen({ navigationUI: "hide" }) : root.webkitRequestFullscreen();
+        if (request && request.then) {
+          request.then(function() {
+            if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(function() {});
+          }).catch(function() {});
+        }
+      }
+
+      if (isPhone && !isStandalone) {
+        if (canFullscreen) {
+          fsTip.textContent = "Tap anywhere to go full screen.";
+          document.addEventListener("touchend", goFullscreen, true);
+          document.addEventListener("click", goFullscreen, true);
+        } else if (/iPhone|iPod/i.test(navigator.userAgent)) {
+          fsTip.textContent = "For full screen: Share \u203A Add to Home Screen.";
+        }
+        fsTip.hidden = !fsTip.textContent;
       }
 
       if (portrait.addEventListener) portrait.addEventListener("change", updateGate);
