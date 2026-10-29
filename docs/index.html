@@ -62,7 +62,7 @@
       #pf-loader {
         z-index: 10; justify-content: center; gap: clamp(14px, 4vh, 28px); overflow: hidden;
         padding: 20px max(32px, env(safe-area-inset-right)) 20px max(32px, env(safe-area-inset-left));
-        background: radial-gradient(ellipse at 50% 45%, #2A1F3D 0%, #170F22 55%, #0B0810 100%);
+        background: radial-gradient(ellipse at 50% 45%, #120C19 0%, #060409 60%, #000000 100%);
         transition: opacity 0.6s ease;
       }
       #pf-loader.pf-out { opacity: 0; pointer-events: none; }
@@ -87,8 +87,11 @@
       .pf-cursor { display: inline-block; width: 10px; height: 18px; background: #E2DAEE; vertical-align: -2px; animation: pf-blink 1s steps(1) infinite; }
       .pf-tip { position: relative; font-size: clamp(22px, 1.3vw, 28px); line-height: 24px; color: #CFC4E2; max-width: 900px; margin: 0; }
       .pf-tip span { color: #FF6FCF; }
+      .pf-tip { min-height: 48px; transition: opacity 0.25s ease; }
+      .pf-tip.pf-fade { opacity: 0; }
+      .pf-name { color: #FF6FCF; }
       @media (max-height: 460px) { .pf-log { min-height: 3.45em; } .pf-log li:nth-last-child(n+4) { display: none; } .pf-ver { font-size: 20px; margin-top: 2px; } }
-      @media (prefers-reduced-motion: reduce) { #pf-loader { transition: none; } .pf-cursor { animation: none; } }
+      @media (prefers-reduced-motion: reduce) { #pf-loader, .pf-tip { transition: none; } .pf-cursor { animation: none; } }
       /* Size to the part of the screen the browser's bars leave visible. */
       @supports (height: 100dvh) { #unity-container { height: 100dvh; } }
       .pf-fs { position: relative; font-size: clamp(22px, 1.3vw, 28px); line-height: 24px; color: #7FF5FF; margin: 0; }
@@ -134,24 +137,18 @@
     <div id="pf-loader" hidden>
       <div class="pf-card">
         <div class="pf-brand">
-          <svg width="52" height="48" viewBox="0 0 44 40" fill="none" aria-hidden="true">
-            <rect x="2" y="2" width="40" height="28" rx="3" stroke="#7FF5FF" stroke-width="3"></rect>
-            <rect x="8" y="8" width="28" height="16" fill="#7FF5FF" fill-opacity="0.2"></rect>
-            <path d="M14 37 H30" stroke="#8A7AA6" stroke-width="3" stroke-linecap="round"></path>
-            <rect x="35" y="25" width="4" height="3" fill="#FF6FCF"></rect>
-          </svg>
           <div>
             <div class="pf-logo">portfoliOS</div>
-            <div class="pf-ver">BIOS v2.0 · interactive game portfolio</div>
+            <div class="pf-ver">By <span class="pf-name">Ilan</span> · BIOS Version 2.0</div>
           </div>
         </div>
         <ul class="pf-log" id="pf-log" aria-hidden="true"></ul>
         <div class="pf-barwrap">
           <div class="pf-bar" id="pf-bar"></div>
-          <div class="pf-barlabel" role="status"><span id="pf-label">Loading desktop…</span><span id="pf-pct">0%</span></div>
+          <div class="pf-barlabel" role="status"><span id="pf-label">Loading</span><span id="pf-pct">0%</span></div>
         </div>
       </div>
-      <p class="pf-tip">Tip: press the <span>power button</span> on the monitor to boot it up.</p>
+      <p class="pf-tip" id="pf-tip">Tip: press the <span>power button</span> on the monitor to start.</p>
       <p class="pf-fs" id="pf-fs" hidden></p>
     </div>
     <script>
@@ -245,14 +242,48 @@
       // Boot log lines, each printed once progress passes its threshold.
       // Unity reports downloads as 0..0.9, then 0.9..1 while the engine starts.
       var BOOT_STEPS = [
-        [0.00, "Memory test ............ <b>640K OK</b>"],
-        [0.10, "Detecting CRT display .. <b>OK</b>"],
-        [0.30, "Mounting C:\\GAMES ...... <b>OK</b>"],
-        [0.55, "Loading desktop ........ <b>OK</b>"],
-        [0.80, "Warming up phosphors ... <b>OK</b>"],
-        [0.90, "Starting engine ........ <b>OK</b>"],
-        [0.99, "Ready. Welcome to my room."]
+        [0.00, "Memory Test : <b>65536K OK</b>"],
+        [0.10, "Primary Display ...... <b>CRT</b>"],
+        [0.30, "Detecting Drive C: ... <b>OK</b>"],
+        [0.45, "Checking for bugs .... <b>3 found, ignoring</b>"],
+        [0.52, "Hiding the bugs ...... <b>under rug</b>"],
+        [0.60, "Loading portfoliOS ..."],
+        [0.90, "Starting portfoliOS ..."]
       ];
+      // Loading tips, Jetpack Joyride style. The real one shows first, then the rest rotate.
+      var TIPS = [
+        "Tip: press the <span>power button</span> on the monitor to start.",
+        "Tip: blowing on the screen does not make it load faster. We tried.",
+        "Tip: every game here was made by one person and a worrying amount of instant noodles.",
+        "Tip: the goats in Goats Vs Tigers would like you to know they are winning.",
+        "Tip: Kai Ping Tycoon is still under construction. Hard hats recommended.",
+        "Tip: this PC has more games than RAM.",
+        "Tip: no tigers were harmed in the making of this portfolio.",
+        "Did you know? This progress bar is 98% decorative.",
+        "Pro tip: staring at the bar does not make it faster. We tested.",
+        "No pixels were harmed in the making of this desktop. A few were mildly inconvenienced.",
+        "Every game in here was playtested by at least one person (me).",
+        "Slow load? The hamster powering the server is on its lunch break.",
+        "Somewhere on this desktop is a game I finished on time. Find it."
+      ];
+      var tipEl = document.querySelector("#pf-tip");
+      var tipTimer = null;
+      // The real tip stays first; the rest play in a fresh random order each visit.
+      var tipOrder = TIPS.slice(1);
+      for (var t = tipOrder.length - 1; t > 0; t--) {
+        var r = Math.floor(Math.random() * (t + 1));
+        var swap = tipOrder[t]; tipOrder[t] = tipOrder[r]; tipOrder[r] = swap;
+      }
+      var tipIndex = 0;
+
+      function nextTip() {
+        tipEl.classList.add("pf-fade");
+        setTimeout(function() {
+          tipEl.innerHTML = tipOrder[tipIndex % tipOrder.length];
+          tipIndex++;
+          tipEl.classList.remove("pf-fade");
+        }, 250);
+      }
       var bootShown = 0;
 
       for (var i = 0; i < CELLS; i++) phoneBar.appendChild(document.createElement("i"));
@@ -261,7 +292,7 @@
         var on = Math.round(progress * CELLS);
         for (var i = 0; i < CELLS; i++) phoneBar.children[i].className = i < on ? (i == on - 1 && on < CELLS ? "on pf-head" : "on") : "";
         phonePct.textContent = Math.round(progress * 100) + "%";
-        bootLabel.textContent = progress < 0.9 ? "Loading desktop…" : "Booting…";
+        bootLabel.textContent = progress < 0.9 ? "Loading" : "Starting";
         while (bootShown < BOOT_STEPS.length && progress >= BOOT_STEPS[bootShown][0]) {
           var cursor = bootLog.querySelector(".pf-cursor");
           if (cursor) cursor.remove();
@@ -284,6 +315,7 @@
         registerServiceWorker();
         phoneLoader.hidden = false;
         setPhoneProgress(0);
+        tipTimer = setInterval(nextTip, 2500);
 
         var script = document.createElement("script");
         script.src = loaderUrl;
@@ -295,7 +327,7 @@
             // Short hold on "Ready", then fade into the room.
             setTimeout(function() {
               phoneLoader.classList.add("pf-out");
-              setTimeout(function() { phoneLoader.hidden = true; }, 700);
+              setTimeout(function() { phoneLoader.hidden = true; clearInterval(tipTimer); }, 700);
             }, 450);
           }).catch((message) => {
             alert(message);
